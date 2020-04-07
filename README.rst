@@ -79,6 +79,9 @@ optional arguments:
 
 ```gridmetetl -t date -p 2018-09-01 2018-09-02 -i ../../GitRepos/onhm-fetcher-parser/Data -o ../../GitRepos/onhm-fetcher-parser/Output -w ../../onhm-fetcher-parser/Data/weights.csv```
 
+### Additional examples:
+https://github.com/nhm-usgs/gridmetetl/blob/master/Examples/Example_code_usage.ipynb
+
 Features
 --------
 
