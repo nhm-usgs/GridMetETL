@@ -294,7 +294,7 @@ class FpoNHM:
         self.np_ws = zeros((self.numdays, self.num_hru))
         self.np_srad = zeros((self.numdays, self.num_hru))
 
-        index = self.gdf.hru_id_nat.values
+        index = self.gdf[self.wghts_id].values
 
         def getaverage(data, wghts):
             try:
