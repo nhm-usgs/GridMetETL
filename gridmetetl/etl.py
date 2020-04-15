@@ -2,15 +2,16 @@
 import geopandas
 import pandas as pd
 from netCDF4 import default_fillvals, Dataset
-from numpy import average, arange, dtype, float32, zeros
+from numpy import average, arange, dtype, float32, zeros, asarray
 import sys
 import xarray as xr
-from gridmetetl.helper import get_gm_url
+from gridmetetl.helper import get_gm_url, np_get_wval
 import requests
 from requests.exceptions import HTTPError
 from datetime import datetime
 from pathlib import Path
-
+import numpy as np
+import netCDF4
 
 class FpoNHM:
     """ Class for fetching climate data and parsing into netcdf
@@ -69,6 +70,7 @@ class FpoNHM:
 
         # Geopandas dataframe that will hold hru id and geometry
         self.gdf = None
+        self.gdf1 = None
 
         # input and output path directories
         self.iptpath = None
@@ -186,10 +188,11 @@ class FpoNHM:
         filenames = sorted(self.iptpath.glob('*.shp'))
         self.gdf = pd.concat([geopandas.read_file(f) for f in filenames], sort=True).pipe(geopandas.GeoDataFrame)
         self.gdf.reset_index(drop=True, inplace=True)
+
         print(f'the shapefile filenames read: {filenames}', flush=True)
         print(f'the shapefile header is: {self.gdf.head()}', flush=True)
 
-        self.num_hru = len(self.gdf.index)
+        # self.num_hru = len(self.gdf.index)
 
         if self.type == 'date':
             self.numdays = ((self.end_date - self.start_date).days + 1)
@@ -247,7 +250,7 @@ class FpoNHM:
                 else:
                     sys.exit("GridMet not available or a bad request - EXITING")
             except Exception as err:
-                sys.exit(f'Other error occured: {err}', flush=True)
+                sys.exit(f'Other error occured: {err}')
             else:
                 print(f'Gridmet variable {var} retrieved: {ncfile[-1]}', flush=True)
         self.ds = xr.open_mfdataset(ncfile, combine='by_coords')
@@ -280,6 +283,11 @@ class FpoNHM:
         # grab the hru_id from the weights file and use as identifier below
         self.wghts_id = wght_uofi.columns[1]
 
+        # this geodataframe merges all hru-ids dissolves so the length of the index
+        # equals the number of hrus
+        self.gdf1 = self.gdf.sort_values(self.wghts_id).dissolve(by=self.wghts_id)
+        self.num_hru = len(self.gdf1.index)
+
         # group by the weights_id for processing
         self.unique_hru_ids = wght_uofi.groupby(self.wghts_id)
 
@@ -294,7 +302,7 @@ class FpoNHM:
         self.np_ws = zeros((self.numdays, self.num_hru))
         self.np_srad = zeros((self.numdays, self.num_hru))
 
-        index = self.gdf[self.wghts_id].values
+        tindex = asarray(self.gdf1.index, dtype=np.int)
 
         def getaverage(data, wghts):
             try:
@@ -334,26 +342,71 @@ class FpoNHM:
                 d_srad = zeros(self.num_hru)
                 d_flt_srad = self.ds[self.gmss_vars[tvar]].values[day, :, :].flatten(order='K')
 
-            # for tind, thid in np.ndenumerate(index):
-            for i in range(len(index)):
-                weight_id_rows = self.unique_hru_ids.get_group(index[i])
-                tw = weight_id_rows.w.values
-                tgid = weight_id_rows.grid_ids.values
-                # tmask, tgid, tw = getweights(index[i], gid, hid, w)
-                if 'tmax' in self.vars:
-                    d_tmax[i] = getaverage(d_flt_tmax[tgid]-273.5, tw)
-                if 'tmin' in self.vars:
-                    d_tmin[i] = getaverage(d_flt_tmin[tgid]-273.5, tw)
-                if 'ppt' in self.vars:
-                    d_ppt[i] = getaverage(d_flt_ppt[tgid], tw)
-                if 'rhmax' in self.vars:
-                    d_rhmax[i] = getaverage(d_flt_rhmax[tgid], tw)
-                if 'rhmin' in self.vars:
-                    d_rhmin[i] = getaverage(d_flt_rhmin[tgid], tw)
-                if 'ws' in self.vars:
-                    d_ws[i] = getaverage(d_flt_ws[tgid], tw)
-                if 'srad' in self.vars:
-                    d_srad[i] = getaverage(d_flt_srad[tgid], tw)
+            for i in arange(len(tindex)):
+                nanvar = False
+                try:
+                    weight_id_rows = self.unique_hru_ids.get_group(tindex[i])
+                    tw = weight_id_rows.w.values
+                    tgid = weight_id_rows.grid_ids.values
+                    # if one var is nan all are nan. getaverage returns nan if 1 value is nan
+                    # np_get_wval return nan if all values are nan otherwise returns the
+                    # weighted masked val.  So assumption here is return a value for partially
+                    # weighted HRUs
+                    if np.isnan(getaverage(d_flt_tmax[tgid], tw)):
+                        nanvar = True
+                    if 'tmax' in self.vars:
+                        if nanvar:
+                            d_tmax[i] = np_get_wval(d_flt_tmax[tgid]-273.5, tgid, tw, tindex[i])
+                        else:
+                            d_tmax[i] = getaverage(d_flt_tmax[tgid]-273.5, tw)
+                    if 'tmin' in self.vars:
+                        if nanvar:
+                            d_tmin[i] = np_get_wval(d_flt_tmin[tgid]-273.5, tgid, tw, tindex[i])
+                        else:
+                            d_tmin[i] = getaverage(d_flt_tmin[tgid]-273.5, tw)
+                    if 'ppt' in self.vars:
+                        if nanvar:
+                            d_ppt[i] = np_get_wval(d_flt_ppt[tgid], tgid, tw, tindex[i])
+                        else:
+                            d_ppt[i] = getaverage(d_flt_ppt[tgid], tw)
+                    if 'rhmax' in self.vars:
+                        if nanvar:
+                            d_rhmax[i] = np_get_wval(d_flt_rhmax[tgid], tgid, tw, tindex[i])
+                        else:
+                            d_rhmax[i] = getaverage(d_flt_rhmax[tgid], tw)
+                    if 'rhmin' in self.vars:
+                        if nanvar:
+                            d_rhmin[i] = np_get_wval(d_flt_rhmin[tgid], tgid, tw, tindex[i])
+                        else:
+                            d_rhmin[i] = getaverage(d_flt_rhmin[tgid], tw)
+                    if 'ws' in self.vars:
+                        if nanvar:
+                            d_ws[i] = np_get_wval(d_flt_ws[tgid], tgid, tw, tindex[i])
+                        else:
+                            d_ws[i] = getaverage(d_flt_ws[tgid], tw)
+                    if 'srad' in self.vars:
+                        if nanvar:
+                            d_srad[i] = np_get_wval(d_flt_srad[tgid], tgid, tw, tindex[i])
+                        else:
+                            d_srad[i] = getaverage(d_flt_srad[tgid], tw)
+                except KeyError:
+                    # This except block protects against HRUs that are completely
+                    # outside the footprint of Gridmet.  If so, they will have no value
+                    # in the weights file and so return default value.
+                    if 'tmax' in self.vars:
+                        d_tmax[i] = netCDF4.default_fillvals['f8']
+                    if 'tmin' in self.vars:
+                        d_tmin[i] = netCDF4.default_fillvals['f8']
+                    if 'ppt' in self.vars:
+                        d_ppt[i] = netCDF4.default_fillvals['f8']
+                    if 'rhmax' in self.vars:
+                        d_rhmax[i] = netCDF4.default_fillvals['f8']
+                    if 'rhmin' in self.vars:
+                        d_rhmin[i] = netCDF4.default_fillvals['f8']
+                    if 'ws' in self.vars:
+                        d_ws[i] = netCDF4.default_fillvals['f8']
+                    if 'srad' in self.vars:
+                        d_srad[i] = netCDF4.default_fillvals['f8']
 
                 if i % 10000 == 0:
                     print(f'    Processing hru {i}', flush=True)
@@ -377,6 +430,7 @@ class FpoNHM:
 
     def finalize(self):
         print(Path.cwd(), flush=True)
+
         ncfile = Dataset(
             self.optpath / (self.fileprefix + 'climate_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc'),
             mode='w', format='NETCDF4_CLASSIC')
@@ -384,7 +438,7 @@ class FpoNHM:
         def getxy(pt):
             return pt.x, pt.y
 
-        centroidseries = self.gdf.geometry.centroid
+        centroidseries = self.gdf1.geometry.centroid
         tlon, tlat = [list(t) for t in zip(*map(getxy, centroidseries))]
 
         # Global Attributes
@@ -392,7 +446,7 @@ class FpoNHM:
         ncfile.featureType = 'timeSeries'
         ncfile.history = ''
 
-        sp_dim = len(self.gdf.index)
+        sp_dim = len(self.gdf1.index)
         # Create dimensions
 
         hruid_dim = ncfile.createDimension('hruid', size=sp_dim)  # hru_id
@@ -402,16 +456,17 @@ class FpoNHM:
             print(dim, flush=True)
 
         # Create Variables
-        time = ncfile.createVariable('time', 'i', ('time',))
+        time = ncfile.createVariable('time', 'f4', ('time',))
         time.long_name = 'time'
         time.standard_name = 'time'
         time.units = 'days since ' + self.str_start
-        time[:] = arange(0, self.numdays)
+        time.calendar = 'standard'
+        time[:] = arange(0, self.numdays, dtype=np.float)
 
         hru = ncfile.createVariable('hruid', 'i', ('hruid',))
         hru.cf_role = 'timeseries_id'
         hru.long_name = 'local model hru id'
-        hru[:] = self.gdf[self.wghts_id].values
+        hru[:] = np.asarray(self.gdf1.index)
 
         lat = ncfile.createVariable('hru_lat', dtype(float32).char, ('hruid',))
         lat.long_name = 'Latitude of HRU centroid'

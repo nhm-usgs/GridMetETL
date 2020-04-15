@@ -2,7 +2,7 @@ import numpy as np
 import datetime as dt
 from numpy.ma import masked
 import traceback
-
+import netCDF4
 
 def np_get_wval(ndata, wghts, hru_id):
     """
@@ -32,7 +32,8 @@ def np_get_wval(ndata, wghts, hru_id):
     else:
         return tmp
 
-def np_get_wval2(ndata, gids, w):
+
+def np_get_wval(ndata, tgid, wghts, hru_id):
     """
     Returns weighted average of ndata with weights = grp
     1) mdata = the subset of values associated with the gridmet id's that are mapped to hru_id.
@@ -47,14 +48,15 @@ def np_get_wval2(ndata, gids, w):
     :return: numpy weighted averaged - masked to deal with nans associated with
             ndata that is outside of the conus.
     """
-    mdata = np.ma.masked_array(ndata[gids],
-                               np.isnan(ndata[gids]))
+    mdata = np.ma.masked_array(ndata, np.isnan(ndata))
+
     # mdata = np.ma.masked_where(ndata[wghts['grid_ids'].values.astype(int)] <= 0.0,
     #                            (ndata[wghts['grid_ids'].values.astype(int)]))
-    tmp = np.ma.average(mdata, weights=w)
+    tmp = np.ma.average(mdata, weights=wghts)
+
     if tmp is masked:
-        # print('returning masked value for hru_id', hru_id)
-        return np.nan
+        # print(f'returning masked value: {hru_id}', ndata)
+        return netCDF4.default_fillvals['f8']
 
     else:
         return tmp

@@ -5,5 +5,5 @@ __email__ = 'rmcd@usgs.gov'
 __version__ = '0.1.0'
 
 from .etl import FpoNHM
-from .helper import np_get_wval2
+from .helper import np_get_wval
 from .helper import get_gm_url
