@@ -156,19 +156,19 @@ class FpoNHM:
         self.vars = ivars
         self.iptpath = Path(iptpath)
         if self.iptpath.exists():
-            print(f'input path exits {self.iptpath}', flush=True)
+            print(f'input path exists {self.iptpath}', flush=True)
         else:
             sys.exit(f'Input Path does not exist: {self.iptpath} - EXITING')
 
         self.optpath = Path(optpath)
         if self.optpath.exists():
-            print('output path exits', flush=True)
+            print('output path exists', flush=True)
         else:
             sys.exit(f'Output Path does not exist: {self.optpath} - EXITING')
 
         self.wghts_file = Path(weights_file)
         if self.wghts_file.exists():
-            print('weights file exits', self.wghts_file, flush=True)
+            print('weights file exists', self.wghts_file, flush=True)
         else:
             sys.exit(f'Weights file does not exist: {self.wghts_file} - EXITING')
         self.type = etype
