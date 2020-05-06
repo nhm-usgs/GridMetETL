@@ -352,43 +352,48 @@ class FpoNHM:
                     # np_get_wval return nan if all values are nan otherwise returns the
                     # weighted masked val.  So assumption here is return a value for partially
                     # weighted HRUs
-                    if np.isnan(getaverage(d_flt_tmax[tgid], tw)):
-                        nanvar = True
                     if 'tmax' in self.vars:
-                        if nanvar:
-                            d_tmax[i] = np_get_wval(d_flt_tmax[tgid]-273.5, tgid, tw, tindex[i])
+                        tmpval = getaverage(d_flt_tmax[tgid]-273.15, tw)
+                        if np.isnan(tmpval):
+                            d_tmax[i] = np_get_wval(d_flt_tmax[tgid]-273.15, tgid, tw, tindex[i])
                         else:
-                            d_tmax[i] = getaverage(d_flt_tmax[tgid]-273.5, tw)
+                            d_tmax[i] = tmpval
                     if 'tmin' in self.vars:
-                        if nanvar:
-                            d_tmin[i] = np_get_wval(d_flt_tmin[tgid]-273.5, tgid, tw, tindex[i])
+                        tmpval = getaverage(d_flt_tmin[tgid]-273.15, tw)
+                        if np.isnan(tmpval):
+                            d_tmin[i] = np_get_wval(d_flt_tmin[tgid]-273.15, tgid, tw, tindex[i])
                         else:
-                            d_tmin[i] = getaverage(d_flt_tmin[tgid]-273.5, tw)
+                            d_tmin[i] = tmpval
                     if 'ppt' in self.vars:
-                        if nanvar:
+                        tmpval = getaverage(d_flt_ppt[tgid], tw)
+                        if np.isnan(tmpval):
                             d_ppt[i] = np_get_wval(d_flt_ppt[tgid], tgid, tw, tindex[i])
                         else:
-                            d_ppt[i] = getaverage(d_flt_ppt[tgid], tw)
+                            d_ppt[i] = tmpval
                     if 'rhmax' in self.vars:
-                        if nanvar:
+                        tmpval =  getaverage(d_flt_rhmax[tgid], tw)
+                        if np.isnan(tmpval):
                             d_rhmax[i] = np_get_wval(d_flt_rhmax[tgid], tgid, tw, tindex[i])
                         else:
-                            d_rhmax[i] = getaverage(d_flt_rhmax[tgid], tw)
+                            d_rhmax[i] = tmpval
                     if 'rhmin' in self.vars:
-                        if nanvar:
+                        tmpval = getaverage(d_flt_rhmin[tgid], tw)
+                        if np.isnan(tmpval):
                             d_rhmin[i] = np_get_wval(d_flt_rhmin[tgid], tgid, tw, tindex[i])
                         else:
-                            d_rhmin[i] = getaverage(d_flt_rhmin[tgid], tw)
+                            d_rhmin[i] = tmpval
                     if 'ws' in self.vars:
-                        if nanvar:
+                        tmpval = getaverage(d_flt_ws[tgid], tw)
+                        if np.isnan(tmpval):
                             d_ws[i] = np_get_wval(d_flt_ws[tgid], tgid, tw, tindex[i])
                         else:
-                            d_ws[i] = getaverage(d_flt_ws[tgid], tw)
+                            d_ws[i] = tmpval
                     if 'srad' in self.vars:
-                        if nanvar:
+                        tmpval = getaverage(d_flt_srad[tgid], tw)
+                        if np.isnan(tmpval):
                             d_srad[i] = np_get_wval(d_flt_srad[tgid], tgid, tw, tindex[i])
                         else:
-                            d_srad[i] = getaverage(d_flt_srad[tgid], tw)
+                            d_srad[i] = tmpval
                 except KeyError:
                     # This except block protects against HRUs that are completely
                     # outside the footprint of Gridmet.  If so, they will have no value
