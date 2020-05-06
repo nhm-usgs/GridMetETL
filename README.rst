@@ -16,7 +16,7 @@ gridmetETL
 
 
 
-Extract gridmet, Traslate to hru, Load to netCDF
+Extract gridmet, Translate to hru, Load to netCDF
 
 
 * Free software: MIT license
