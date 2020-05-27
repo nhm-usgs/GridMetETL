@@ -3,6 +3,7 @@ from gridmetetl.etl import FpoNHM
 import argparse
 import sys
 import datetime
+from pathlib import Path
 
 
 def valid_date(s):
@@ -12,21 +13,21 @@ def valid_date(s):
         msg = "Not a valid date: '{0}'.".format(s)
         raise argparse.ArgumentTypeError(msg)
 
+def valid_path(s):
+    if Path(s).exists():
+        return s
+    else:
+        raise argparse.ArgumentError(f'Path does not exist: {s}')
 
-def main():
-    """Console script for gridmetetl."""
-    numdays = None
-    startdate = None
-    enddate = None
-    idir = None
-    odir = None
-    wght_file = None
-    extract_type = None
-    file_prefix = None
-    gm_vars = None
+def valid_file(s):
+    if Path(s).exists():
+        return s
+    else:
+        raise argparse.ArgumentError(f'File does not exist: {s}')
 
+def parser():
     my_parser = argparse.ArgumentParser(prog='gridmet_etl',
-                                        description='map gridded climate data to polygon using zonal area weighted mean')
+                                    description='map gridded climate data to polygon using zonal area weighted mean')
 
     my_parser.add_argument('-t', '--extract_type', type=str,
                            help='extract method: (days) or (date)', metavar='extraction type',
@@ -46,15 +47,15 @@ def main():
                            help='option: prefix for output files',
                            metavar='output_file_prefix', default='')
 
-    my_parser.add_argument('-i', '--inpath', type=str,
+    my_parser.add_argument('-i', '--inpath', type=valid_path,
                            help='input_path (location of HRU shapefiles)', metavar='input_path',
                            default=None, required=True)
 
-    my_parser.add_argument('-o', '--outpath', type=str,
-                           help='Output path (location of netcdf output files by shapefile output)', metavar='output_path',
-                           default=None, required=True)
+    my_parser.add_argument('-o', '--outpath', type=valid_path,
+                        help='Output path (location of netcdf output files by shapefile output)', metavar='output_path',
+                        default=None, required=True)
 
-    my_parser.add_argument('-w', '--weightsfile', type=str,
+    my_parser.add_argument('-w', '--weightsfile', type=valid_file,
                            help='path/weight.csv - path/name of weight file', metavar='weight_file',
                            default=None, required=True)
 
@@ -63,45 +64,68 @@ def main():
                            choices=['tmax', 'tmin', 'ppt', 'rhmax', 'rhmin', 'ws', 'srad'],
                            metavar='GridMet_Variables',
                            default=['tmax', 'tmin', 'ppt', 'rhmax', 'rhmin', 'ws'])
+    return my_parser
 
-    args = my_parser.parse_args()
+def args(parser):
+    return parser.parse_args()
 
+def get_extraction(parser, args):
+    extract_type = None
+    numdays = None
+    startdate = None
+    enddate = None
     if all(i is not None for i in [args.period, args.days]):
-        my_parser.error('Either the --days or --period option must be specified not both')
+        parser.error('Either the --days or --period option must be specified not both')
     if all(i is None for i in [args.period, args.days]):
-        my_parser.error('Either the --days or --period option must be specified')
-    # if args.period is not None:
-    #     startdate = args.period[0]
-    #     enddate = args.period[1]
+        parser.error('Either the --days or --period option must be specified')
     if args.extract_type is not None:
         extract_type = args.extract_type
         if args.extract_type == 'days':
             if args.days is not None:
                 numdays = args.days
             else:
-                my_parser.error('if -t --extract_type == days then -d must be specified')
+                parser.error('if -t --extract_type == days then -d must be specified')
         elif args.extract_type == 'date':
             if args.period is not None:
                 startdate = args.period[0]
                 enddate = args.period[1]
                 if startdate >= enddate:
-                    my_parser.error('when using -p the first date must occur before the second')
+                    parser.error('when using -p the first date must occur before the second')
             else:
-                my_parser.error('if -t --extract_type == dates then -p must be specified')
+                parser.error('if -t --extract_type == dates then -p must be specified')
+    else:
+        parser.error('--extract_type must be specified')
 
-    if args.outpath is not None:
-        odir = args.outpath
-    if args.inpath is not None:
-        idir = args.inpath
-    if args.weightsfile is not None:
-        wght_file = args.weightsfile
+    return extract_type, numdays, startdate, enddate
+
+def get_file_prefix(args):
     if args.file_prefix is not None:
-        file_prefix = args.file_prefix
-    if args.variables is not None:
-        gm_vars = args.variables
+        return args.file_prefix
+    else:
+        return ''
+
+def main(parser, args):
+    """Console script for gridmetetl."""
+    my_parser = parser
+    my_args = args
+    numdays = None
+    startdate = None
+    enddate = None
+    idir = None
+    odir = None
+    wght_file = None
+    extract_type = None
+    file_prefix = None
+    gm_vars = None
+
+    extract_type, numdays, startdate, enddate = get_extraction(my_parser, my_args)
+    idir = my_args.inpath
+    odir = my_args.outpath
+    wght_file = my_args.weightsfile
+    file_prefix = get_file_prefix(args)
+    gm_vars = my_args.variables
 
     print('starting Script', flush=True)
-    # numdays = 2
     fp = FpoNHM()
     print('instantiated', flush=True)
     # initialize(self, iptpath, optpath, weights_file, type=None, days=None, start_date=None, end_date=None)
@@ -140,4 +164,7 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())  # pragma: no cover
+    parser = parser()
+    args = args(parser)
+
+    main(parser, args)
