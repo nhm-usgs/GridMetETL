@@ -2,16 +2,17 @@
 import geopandas
 import pandas as pd
 from netCDF4 import default_fillvals, Dataset
-from numpy import average, arange, dtype, float32, zeros, asarray
+from numpy import arange, dtype, float32, zeros, asarray
 import sys
 import xarray as xr
-from gridmetetl.helper import get_gm_url, np_get_wval
+from gridmetetl.helper import get_gm_url, np_get_wval, getaverage
 import requests
 from requests.exceptions import HTTPError
 from datetime import datetime
 from pathlib import Path
 import numpy as np
 import netCDF4
+
 
 class FpoNHM:
     """ Class for fetching climate data and parsing into netcdf
@@ -138,19 +139,17 @@ class FpoNHM:
         Initialize the fp_ohm class:
             1) initialize geopandas dataframe of concatenated hru_shapefiles
             2) initialize climate data using xarray
+        :param ivars: list of vars to extract.  limited to ['tmax', 'tmin', 'ppt', 'rhmax', 'rhmin', 'ws', 'srad']
+        :param iptpath: Input path, downloaded gridmet files will be saved here.  Must also contain shapefile used to
+                        generate the weights file.
+        :param optpath: Path to write newly generated netcdf file containing values for vars for each HRU
+        :param weights_file: Weights file, based on shapefile in iptpath that was used to generate weights file
+        :param etype: extraction time, can be days or date
+        :param days: if extraction type == days, then # days to extract from most recently available date
+        :param start_date: if extraction type date then start date in 'YYYY-MM-DD"
+        :param end_date: if extraction type date then end date in 'YYYY-MM-DD"
+        :param fileprefix: String to add to both downloaded gridment data and mapped hru file
 
-        :param weights_file:
-        :param etype:
-        :param days:
-        :param start_date:
-        :param end_date:
-        :param fileprefix:
-        :return:
-        :type iptpath: Path
-        :param ivars: list of vars to extract
-        :param iptpath: directory containing hru shapefiles and weight file,
-                        geotiffs if using rasterstats
-        :param optpath: directory to save netcdf input files
         :return: success or failure
         """
         self.vars = ivars
@@ -185,6 +184,7 @@ class FpoNHM:
         # glob.glob produces different results on Win and Linux. Adding sorted makes result consistent
         # filenames = sorted(glob.glob('*.shp'))
         # use pathlib glob
+        # glob is here because original nhm had multiple shapefiles
         filenames = sorted(self.iptpath.glob('*.shp'))
         self.gdf = pd.concat([geopandas.read_file(f) for f in filenames], sort=True).pipe(geopandas.GeoDataFrame)
         self.gdf.reset_index(drop=True, inplace=True)
@@ -304,13 +304,6 @@ class FpoNHM:
 
         tindex = asarray(self.gdf1.index, dtype=np.int)
 
-        def getaverage(data, wghts):
-            try:
-                v_ave = average(data, weights=wghts)
-            except ZeroDivisionError:
-                v_ave = default_fillvals['f8']
-            return v_ave
-
         for day in arange(self.numdays):
             print(f'Processing day: {day}', flush=True)
             if 'tmax' in self.vars:
@@ -343,7 +336,7 @@ class FpoNHM:
                 d_flt_srad = self.ds[self.gmss_vars[tvar]].values[day, :, :].flatten(order='K')
 
             for i in arange(len(tindex)):
-                nanvar = False
+
                 try:
                     weight_id_rows = self.unique_hru_ids.get_group(tindex[i])
                     tw = weight_id_rows.w.values
@@ -355,43 +348,43 @@ class FpoNHM:
                     if 'tmax' in self.vars:
                         tmpval = getaverage(d_flt_tmax[tgid]-273.15, tw)
                         if np.isnan(tmpval):
-                            d_tmax[i] = np_get_wval(d_flt_tmax[tgid]-273.15, tgid, tw, tindex[i])
+                            d_tmax[i] = np_get_wval(d_flt_tmax[tgid]-273.15, tw, tindex[i])
                         else:
                             d_tmax[i] = tmpval
                     if 'tmin' in self.vars:
                         tmpval = getaverage(d_flt_tmin[tgid]-273.15, tw)
                         if np.isnan(tmpval):
-                            d_tmin[i] = np_get_wval(d_flt_tmin[tgid]-273.15, tgid, tw, tindex[i])
+                            d_tmin[i] = np_get_wval(d_flt_tmin[tgid]-273.15, tw, tindex[i])
                         else:
                             d_tmin[i] = tmpval
                     if 'ppt' in self.vars:
                         tmpval = getaverage(d_flt_ppt[tgid], tw)
                         if np.isnan(tmpval):
-                            d_ppt[i] = np_get_wval(d_flt_ppt[tgid], tgid, tw, tindex[i])
+                            d_ppt[i] = np_get_wval(d_flt_ppt[tgid], tw, tindex[i])
                         else:
                             d_ppt[i] = tmpval
                     if 'rhmax' in self.vars:
-                        tmpval =  getaverage(d_flt_rhmax[tgid], tw)
+                        tmpval = getaverage(d_flt_rhmax[tgid], tw)
                         if np.isnan(tmpval):
-                            d_rhmax[i] = np_get_wval(d_flt_rhmax[tgid], tgid, tw, tindex[i])
+                            d_rhmax[i] = np_get_wval(d_flt_rhmax[tgid], tw, tindex[i])
                         else:
                             d_rhmax[i] = tmpval
                     if 'rhmin' in self.vars:
                         tmpval = getaverage(d_flt_rhmin[tgid], tw)
                         if np.isnan(tmpval):
-                            d_rhmin[i] = np_get_wval(d_flt_rhmin[tgid], tgid, tw, tindex[i])
+                            d_rhmin[i] = np_get_wval(d_flt_rhmin[tgid], tw, tindex[i])
                         else:
                             d_rhmin[i] = tmpval
                     if 'ws' in self.vars:
                         tmpval = getaverage(d_flt_ws[tgid], tw)
                         if np.isnan(tmpval):
-                            d_ws[i] = np_get_wval(d_flt_ws[tgid], tgid, tw, tindex[i])
+                            d_ws[i] = np_get_wval(d_flt_ws[tgid], tw, tindex[i])
                         else:
                             d_ws[i] = tmpval
                     if 'srad' in self.vars:
                         tmpval = getaverage(d_flt_srad[tgid], tw)
                         if np.isnan(tmpval):
-                            d_srad[i] = np_get_wval(d_flt_srad[tgid], tgid, tw, tindex[i])
+                            d_srad[i] = np_get_wval(d_flt_srad[tgid], tw, tindex[i])
                         else:
                             d_srad[i] = tmpval
                 except KeyError:

@@ -31,7 +31,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
-    description="Extract gridmet, Traslate to hru, Load to netCDF",
+    description="Extract gridmet, Translate to hru, Load to netCDF",
     entry_points={
         'console_scripts': [
             'gridmetetl=gridmetetl.gridmet_etl:main',
