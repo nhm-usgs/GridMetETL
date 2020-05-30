@@ -48,7 +48,8 @@ class FpoNHM:
                 'rhmin': 'daily_minimum_relative_humidity',
                 'ws': 'daily_mean_wind_speed',
                 'srad': 'daily_mean_shortwave_radiation_at_surface'}
-        self.vars = None
+        self.partial = False
+        self.vars = ['tmax', 'tmin', 'ppt', 'rhmax', 'rhmin', 'ws']
 
         # type of retrieval (days) retrieve by previous number of days - used in operational mode
         # or (date) used to retrieve specific period of time
@@ -124,6 +125,14 @@ class FpoNHM:
         # Starting date based on numdays
         self.str_start = None
 
+        self.dstmax = None
+        self.dstmin = None
+        self.dsrhmax = None
+        self.dsrhmin = None
+        self.dsws = None
+        self.dssrad = None
+        self.dsppt = None
+
     def write_extract_file(self, ivar, incfile, url, params):
         file = requests.get(url, params=params)
         file.raise_for_status()
@@ -133,7 +142,7 @@ class FpoNHM:
             fh.write(file.content)
         fh.close()
 
-    def initialize(self, ivars, iptpath, optpath, weights_file, etype=None, days=None,
+    def initialize(self, partial, ivars, iptpath, optpath, weights_file, etype=None, days=None,
                    start_date=None, end_date=None, fileprefix=''):
         """
         Initialize the fp_ohm class:
@@ -152,7 +161,9 @@ class FpoNHM:
 
         :return: success or failure
         """
-        self.vars = ivars
+        self.partial = partial
+        for var in ivars:
+            self.vars.append(var)
         self.iptpath = Path(iptpath)
         if self.iptpath.exists():
             print(f'input path exists {self.iptpath}', flush=True)
@@ -206,43 +217,43 @@ class FpoNHM:
                     self.str_start, url, params = get_gm_url(self.type, 'tmax', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-
+                    self.dstmax = xr.open_dataset(ncfile[-1])
                 elif var == 'tmin':
                     # Minimum Temperature
                     self.str_start, url, params = get_gm_url(self.type, 'tmin', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-
+                    self.dstmin = xr.open_dataset(ncfile[-1])
                 elif var == 'ppt':
                     # Precipitation
                     self.str_start, url, params = get_gm_url(self.type, 'ppt', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-
+                    self.dsppt = xr.open_dataset(ncfile[-1])
                 elif var == 'rhmax':
                     # Maximum Relative Humidity
                     self.str_start, url, params = get_gm_url(self.type, 'rhmax', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-
+                    self.dsrhmax = xr.open_dataset(ncfile[-1])
                 elif var == 'rhmin':
                     # Minimum Relative Humidity
                     self.str_start, url, params = get_gm_url(self.type, 'rhmin', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-
+                    self.dsrhmin = xr.open_dataset(ncfile[-1])
                 elif var == 'ws':
                     # Mean daily Wind Speed
                     self.str_start, url, params = get_gm_url(self.type, 'ws', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-
+                    self.dsws = xr.open_dataset(ncfile[-1])
                 elif var == 'srad':
                     # Surface downwelling shortwave flux in air
                     self.str_start, url, params = get_gm_url(self.type, 'srad', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-
+                    self.dssrad = xr.open_dataset(ncfile[-1])
             except HTTPError as http_err:
                 print(f'HTTP error occured: {http_err}', flush=True)
                 if self.numdays == 1:
@@ -253,13 +264,13 @@ class FpoNHM:
                 sys.exit(f'Other error occured: {err}')
             else:
                 print(f'Gridmet variable {var} retrieved: {ncfile[-1]}', flush=True)
-        self.ds = xr.open_mfdataset(ncfile, combine='by_coords')
+        # self.ds = xr.open_mfdataset(ncfile, combine='by_coords')
 
-        self.lat_h = self.ds['lat']
-        self.lon_h = self.ds['lon']
-        self.time_h = self.ds['day']
+        self.lat_h = self.dstmax['lat']
+        self.lon_h = self.dstmax['lon']
+        self.time_h = self.dstmax['day']
 
-        ts = self.ds.sizes
+        ts = self.dstmax.sizes
         self.dayshape = ts['day']
         self.lonshape = ts['lon']
         self.latshape = ts['lat']
@@ -306,125 +317,106 @@ class FpoNHM:
 
         for day in arange(self.numdays):
             print(f'Processing day: {day}', flush=True)
-            if 'tmax' in self.vars:
-                tvar = 'tmax'
-                d_tmax = zeros(self.num_hru)
-                d_flt_tmax = self.ds[self.gmss_vars[tvar]].values[day, :, :].flatten(order='K')
-            if 'tmin' in self.vars:
-                tvar = 'tmin'
-                d_tmin = zeros(self.num_hru)
-                d_flt_tmin = self.ds[self.gmss_vars[tvar]].values[day, :, :].flatten(order='K')
-            if 'ppt' in self.vars:
-                tvar = 'ppt'
-                d_ppt = zeros(self.num_hru)
-                d_flt_ppt = self.ds[self.gmss_vars[tvar]].values[day, :, :].flatten(order='K')
-            if 'rhmax' in self.vars:
-                tvar = 'rhmax'
-                d_rhmax = zeros(self.num_hru)
-                d_flt_rhmax = self.ds[self.gmss_vars[tvar]].values[day, :, :].flatten(order='K')
-            if 'rhmin' in self.vars:
-                tvar = 'rhmin'
-                d_rhmin = zeros(self.num_hru)
-                d_flt_rhmin = self.ds[self.gmss_vars[tvar]].values[day, :, :].flatten(order='K')
-            if 'ws' in self.vars:
-                tvar = 'ws'
-                d_ws = zeros(self.num_hru)
-                d_flt_ws = self.ds[self.gmss_vars[tvar]].values[day, :, :].flatten(order='K')
+
+            d_tmax = zeros(self.num_hru)
+            d_flt_tmax = self.dstmax[self.gmss_vars['tmax']].values[day, :, :].flatten(order='K')
+
+            d_tmin = zeros(self.num_hru)
+            d_flt_tmin = self.dstmin[self.gmss_vars['tmin']].values[day, :, :].flatten(order='K')
+
+            d_ppt = zeros(self.num_hru)
+            d_flt_ppt = self.dsppt[self.gmss_vars['ppt']].values[day, :, :].flatten(order='K')
+
+            d_rhmax = zeros(self.num_hru)
+            d_flt_rhmax = self.dsrhmax[self.gmss_vars['rhmax']].values[day, :, :].flatten(order='K')
+
+            d_rhmin = zeros(self.num_hru)
+            d_flt_rhmin = self.dsrhmin[self.gmss_vars['rhmin']].values[day, :, :].flatten(order='K')
+
+            d_ws = zeros(self.num_hru)
+            d_flt_ws = self.dsws[self.gmss_vars['ws']].values[day, :, :].flatten(order='K')
+
             if 'srad' in self.vars:
-                tvar = 'srad'
                 d_srad = zeros(self.num_hru)
-                d_flt_srad = self.ds[self.gmss_vars[tvar]].values[day, :, :].flatten(order='K')
+                d_flt_srad = self.dssrad[self.gmss_vars['srad']].values[day, :, :].flatten(order='K')
 
             for i in arange(len(tindex)):
-
-                try:
+                if not self.partial:
                     weight_id_rows = self.unique_hru_ids.get_group(tindex[i])
                     tw = weight_id_rows.w.values
                     tgid = weight_id_rows.grid_ids.values
-                    # if one var is nan all are nan. getaverage returns nan if 1 value is nan
-                    # np_get_wval return nan if all values are nan otherwise returns the
-                    # weighted masked val.  So assumption here is return a value for partially
-                    # weighted HRUs
-                    if 'tmax' in self.vars:
-                        tmpval = getaverage(d_flt_tmax[tgid]-273.15, tw)
-                        if np.isnan(tmpval):
-                            d_tmax[i] = np_get_wval(d_flt_tmax[tgid]-273.15, tw, tindex[i])
-                        else:
-                            d_tmax[i] = tmpval
-                    if 'tmin' in self.vars:
-                        tmpval = getaverage(d_flt_tmin[tgid]-273.15, tw)
-                        if np.isnan(tmpval):
-                            d_tmin[i] = np_get_wval(d_flt_tmin[tgid]-273.15, tw, tindex[i])
-                        else:
-                            d_tmin[i] = tmpval
-                    if 'ppt' in self.vars:
-                        tmpval = getaverage(d_flt_ppt[tgid], tw)
-                        if np.isnan(tmpval):
-                            d_ppt[i] = np_get_wval(d_flt_ppt[tgid], tw, tindex[i])
-                        else:
-                            d_ppt[i] = tmpval
-                    if 'rhmax' in self.vars:
-                        tmpval = getaverage(d_flt_rhmax[tgid], tw)
-                        if np.isnan(tmpval):
-                            d_rhmax[i] = np_get_wval(d_flt_rhmax[tgid], tw, tindex[i])
-                        else:
-                            d_rhmax[i] = tmpval
-                    if 'rhmin' in self.vars:
-                        tmpval = getaverage(d_flt_rhmin[tgid], tw)
-                        if np.isnan(tmpval):
-                            d_rhmin[i] = np_get_wval(d_flt_rhmin[tgid], tw, tindex[i])
-                        else:
-                            d_rhmin[i] = tmpval
-                    if 'ws' in self.vars:
-                        tmpval = getaverage(d_flt_ws[tgid], tw)
-                        if np.isnan(tmpval):
-                            d_ws[i] = np_get_wval(d_flt_ws[tgid], tw, tindex[i])
-                        else:
-                            d_ws[i] = tmpval
+                    # tmask, tgid, tw = getweights(index[i], gid, hid, w)
+
+                    d_tmax[i] = getaverage(d_flt_tmax[tgid] - 273.15, tw)
+                    d_tmin[i] = getaverage(d_flt_tmin[tgid] - 273.15, tw)
+                    d_ppt[i] = getaverage(d_flt_ppt[tgid], tw)
+                    d_rhmax[i] = getaverage(d_flt_rhmax[tgid], tw)
+                    d_rhmin[i] = getaverage(d_flt_rhmin[tgid], tw)
+                    d_ws[i] = getaverage(d_flt_ws[tgid], tw)
+
                     if 'srad' in self.vars:
-                        tmpval = getaverage(d_flt_srad[tgid], tw)
-                        if np.isnan(tmpval):
-                            d_srad[i] = np_get_wval(d_flt_srad[tgid], tw, tindex[i])
+                        d_srad[i] = getaverage(d_flt_srad[tgid], tw)
+                else:
+                    try:
+                        weight_id_rows = self.unique_hru_ids.get_group(tindex[i])
+                        tw = weight_id_rows.w.values
+                        tgid = weight_id_rows.grid_ids.values
+                        # if one var is nan all are nan. getaverage returns nan if 1 value is nan
+                        # np_get_wval return nan if all values are nan otherwise returns the
+                        # weighted masked val.  So assumption here is return a value for partially
+                        # weighted HRUs
+                        nanvar = False
+                        if np.isnan(getaverage(d_flt_tmax[tgid], tw)):
+                            nanvar = True
+
+                        if nanvar:
+                            d_tmax[i] = np_get_wval(d_flt_tmax[tgid] - 273.15, tgid, tw, tindex[i])
+                            d_tmin[i] = np_get_wval(d_flt_tmin[tgid] - 273.15, tgid, tw, tindex[i])
+                            d_ppt[i] = np_get_wval(d_flt_ppt[tgid], tgid, tw, tindex[i])
+                            d_rhmax[i] = np_get_wval(d_flt_rhmax[tgid], tgid, tw, tindex[i])
+                            d_rhmin[i] = np_get_wval(d_flt_rhmin[tgid], tgid, tw, tindex[i])
+                            d_ws[i] = np_get_wval(d_flt_ws[tgid], tgid, tw, tindex[i])
+
                         else:
-                            d_srad[i] = tmpval
-                except KeyError:
-                    # This except block protects against HRUs that are completely
-                    # outside the footprint of Gridmet.  If so, they will have no value
-                    # in the weights file and so return default value.
-                    if 'tmax' in self.vars:
+                            d_tmax[i] = getaverage(d_flt_tmax[tgid] - 273.15, tw)
+                            d_tmin[i] = getaverage(d_flt_tmin[tgid] - 273.15, tw)
+                            d_ppt[i] = getaverage(d_flt_ppt[tgid], tw)
+                            d_rhmax[i] = getaverage(d_flt_rhmax[tgid], tw)
+                            d_rhmin[i] = getaverage(d_flt_rhmin[tgid], tw)
+                            d_ws[i] = getaverage(d_flt_ws[tgid], tw)
+
+                        if 'srad' in self.vars:
+                            if nanvar:
+                                d_srad[i] = np_get_wval(d_flt_srad[tgid], tgid, tw, tindex[i])
+                            else:
+                                d_srad[i] = getaverage(d_flt_srad[tgid], tw)
+                    except KeyError:
+                        # This except block protects against HRUs that are completely
+                        # outside the footprint of Gridmet.  If so, they will have no value
+                        # in the weights file and so return default value.
                         d_tmax[i] = netCDF4.default_fillvals['f8']
-                    if 'tmin' in self.vars:
                         d_tmin[i] = netCDF4.default_fillvals['f8']
-                    if 'ppt' in self.vars:
                         d_ppt[i] = netCDF4.default_fillvals['f8']
-                    if 'rhmax' in self.vars:
                         d_rhmax[i] = netCDF4.default_fillvals['f8']
-                    if 'rhmin' in self.vars:
                         d_rhmin[i] = netCDF4.default_fillvals['f8']
-                    if 'ws' in self.vars:
                         d_ws[i] = netCDF4.default_fillvals['f8']
-                    if 'srad' in self.vars:
-                        d_srad[i] = netCDF4.default_fillvals['f8']
+                        if 'srad' in self.vars:
+                            d_srad[i] = netCDF4.default_fillvals['f8']
 
-                if i % 10000 == 0:
-                    print(f'    Processing hru {i}', flush=True)
+                    if i % 10000 == 0:
+                        print(f'    Processing hru {i}', flush=True)
 
-            if 'tmax' in self.vars:
-                self.np_tmax[day, :] = d_tmax[:]
-            if 'tmin' in self.vars:
-                self.np_tmin[day, :] = d_tmin[:]
-            if 'ppt' in self.vars:
-                self.np_ppt[day, :] = d_ppt[:]
-            if 'rhmax' in self.vars:
-                self.np_rhmax[day, :] = d_rhmax[:]
-            if 'rhmin' in self.vars:
-                self.np_rhmin[day, :] = d_rhmin[:]
-            if 'ws' in self.vars:
-                self.np_ws[day, :] = d_ws[:]
+
+            self.np_tmax[day, :] = d_tmax[:]
+            self.np_tmin[day, :] = d_tmin[:]
+            self.np_ppt[day, :] = d_ppt[:]
+            self.np_rhmax[day, :] = d_rhmax[:]
+            self.np_rhmin[day, :] = d_rhmin[:]
+            self.np_ws[day, :] = d_ws[:]
             if 'srad' in self.vars:
                 self.np_srad[day, :] = d_srad[:]
 
-        self.ds.close()
+        # self.dstmax.close()
 
     def finalize(self):
         print(Path.cwd(), flush=True)

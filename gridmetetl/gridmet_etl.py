@@ -59,11 +59,16 @@ def parser():
                            help='path/weight.csv - path/name of weight file', metavar='weight_file',
                            default=None, required=True)
 
-    my_parser.add_argument('-v', '--variables', nargs='*', type=str,
-                           help='over-ride default vars',
-                           choices=['tmax', 'tmin', 'ppt', 'rhmax', 'rhmin', 'ws', 'srad'],
-                           metavar='GridMet_Variables',
-                           default=['tmax', 'tmin', 'ppt', 'rhmax', 'rhmin', 'ws'])
+    my_parser.add_argument('-v', '--variables', nargs=1, type=str,
+                           help='Add additional variables (currently can add srad',
+                           choices=['srad'],
+                           metavar='Additional_GridMet_Variables',
+                           default=[])
+
+    my_parser.add_argument('--partial',  type=bool,
+                           help='set if you expect only partial mapping to HRU and you want the partial mapping',
+                           metavar='Expect partially mapped HRUs',
+                           default=False)
     return my_parser
 
 def args(parser):
@@ -117,6 +122,7 @@ def main(parser, args):
     extract_type = None
     file_prefix = None
     gm_vars = None
+    partial = None
 
     extract_type, numdays, startdate, enddate = get_extraction(my_parser, my_args)
     idir = my_args.inpath
@@ -124,14 +130,14 @@ def main(parser, args):
     wght_file = my_args.weightsfile
     file_prefix = get_file_prefix(args)
     gm_vars = my_args.variables
-
+    partial = my_args.partial
     print('starting Script', flush=True)
     fp = FpoNHM()
     print('instantiated', flush=True)
     # initialize(self, iptpath, optpath, weights_file, type=None, days=None, start_date=None, end_date=None)
     # ready = fp.initialize(idir, odir, wght_file, extract_type, numdays, startdate, enddate, file_prefix)
     try:
-        ready = fp.initialize(gm_vars, idir, odir, wght_file, etype=extract_type, days=numdays,
+        ready = fp.initialize(partial, gm_vars, idir, odir, wght_file, etype=extract_type, days=numdays,
                               start_date=startdate, end_date=enddate,
                               fileprefix=file_prefix)
         if ready:
