@@ -370,12 +370,12 @@ class FpoNHM:
                             nanvar = True
 
                         if nanvar:
-                            d_tmax[i] = np_get_wval(d_flt_tmax[tgid] - 273.15, tgid, tw, tindex[i])
-                            d_tmin[i] = np_get_wval(d_flt_tmin[tgid] - 273.15, tgid, tw, tindex[i])
-                            d_ppt[i] = np_get_wval(d_flt_ppt[tgid], tgid, tw, tindex[i])
-                            d_rhmax[i] = np_get_wval(d_flt_rhmax[tgid], tgid, tw, tindex[i])
-                            d_rhmin[i] = np_get_wval(d_flt_rhmin[tgid], tgid, tw, tindex[i])
-                            d_ws[i] = np_get_wval(d_flt_ws[tgid], tgid, tw, tindex[i])
+                            d_tmax[i] = np_get_wval(d_flt_tmax[tgid] - 273.15, tw, tindex[i])
+                            d_tmin[i] = np_get_wval(d_flt_tmin[tgid] - 273.15, tw, tindex[i])
+                            d_ppt[i] = np_get_wval(d_flt_ppt[tgid], tw, tindex[i])
+                            d_rhmax[i] = np_get_wval(d_flt_rhmax[tgid], tw, tindex[i])
+                            d_rhmin[i] = np_get_wval(d_flt_rhmin[tgid], tw, tindex[i])
+                            d_ws[i] = np_get_wval(d_flt_ws[tgid], tw, tindex[i])
 
                         else:
                             d_tmax[i] = getaverage(d_flt_tmax[tgid] - 273.15, tw)
