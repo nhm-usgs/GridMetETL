@@ -1,5 +1,5 @@
 """Console script for gridmetetl."""
-from gridmetetl.etl import FpoNHM
+from etl import FpoNHM
 import argparse
 import sys
 import datetime
