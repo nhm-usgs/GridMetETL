@@ -5,7 +5,7 @@ from netCDF4 import default_fillvals, Dataset
 from numpy import arange, dtype, float32, zeros, asarray
 import sys
 import xarray as xr
-from gridmetetl.helper import get_gm_url, np_get_wval, getaverage
+from helper import get_gm_url, np_get_wval, getaverage
 import requests
 from requests.exceptions import HTTPError
 from datetime import datetime
