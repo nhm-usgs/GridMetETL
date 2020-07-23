@@ -5,7 +5,7 @@ from netCDF4 import default_fillvals, Dataset
 from numpy import arange, dtype, float32, zeros, asarray
 import sys
 import xarray as xr
-from gridmetetl.helper import get_gm_url, np_get_wval, getaverage
+from helper import get_gm_url, np_get_wval, getaverage
 import requests
 from requests.exceptions import HTTPError
 from datetime import datetime
@@ -521,11 +521,18 @@ class FpoNHM:
 
             elif var == 'srad':
                 srad = ncfile.createVariable('srad', dtype(float32).char, ('time', 'hruid'))
-                srad.long_name = 'surface_downwelling_shortwave_flux_in_air '
+                srad.long_name = 'surface_downwelling_shortwave_flux_in_air'
                 srad.units = 'W m-2'
-                srad.standard_name = 'srad '
+                srad.standard_name = 'srad'
                 srad.fill_value = default_fillvals['f8']
                 srad[:, :] = self.np_srad[:, :]
+
+        hum = ncfile.createVariable('humidity', dtype(float32).char, ('time', 'hruid'))
+        hum.long_name = 'Daily mean relative humidity'
+        hum.units = 'percent'
+        hum.standard_name = 'rhavg'
+        hum.fill_value = default_fillvals['f8']
+        hum[:, :] = (self.np_rhmax[:, :] + self.np_rhmin[:, :])/2.0
 
         ncfile.close()
         print("dataset is closed", flush=True)
