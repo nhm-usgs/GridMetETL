@@ -2,7 +2,6 @@
 gridmetETL
 ==========
 
-
 .. image:: https://img.shields.io/pypi/v/gridmetetl.svg
         :target: https://pypi.python.org/pypi/gridmetetl
 
@@ -13,37 +12,35 @@ gridmetETL
         :target: https://gridmetetl.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-
-
-
-Extract gridmet, Translate to hru, Load to netCDF
-
+Extract data from gridMET; translate to HRU; load to netCDF
 
 * Free software: MIT license
 * Documentation: https://gridmetetl.readthedocs.io.
 
 Install
 -------
-1. Create conda env as follows
-    * conda create -n gmetl python=3.7
-    * conda activate gmetl
-    * conda install -c conda-forge numpy matplotlib pandas geopandas xarray netcdf4 requests dask
-    * conda install -c conda-forge jupyterlab
+1. Create Conda env as follows
+    * ``conda create -n gmetl python=3.7``
+    * ``conda activate gmetl``
+    * ``conda install -c conda-forge numpy matplotlib pandas geopandas xarray netcdf4 requests dask``
+    * ``conda install -c conda-forge jupyterlab``
    OPTIONAL:
-    * conda install -c conda-forge git
-    * conda install -c conda-forge pip
+    * ``conda install -c conda-forge git``
+    * ``conda install -c conda-forge pip``
 
 2. Clone repository
-    * cd gridmetetl
+    * ``cd gridmetetl``
     * Develop code:
-        * pip install -e .
+        * ``pip install -e .``
     * Use code
-        * pip install .
-Use
--------
-From your conda environment created above:
+        * ``pip install .``
 
-.. code-block:: bash
+Use
+---
+
+From your Conda environment created above:
+
+::
 
     (gmetl) B:\gitbmi\gridmetetl>gridmetetl -h
 
@@ -74,16 +71,17 @@ From your conda environment created above:
       -w weight_file, --weightsfile weight_file
                             path/weight.csv - path/name of weight file
       -v [GridMet_Variables [GridMet_Variables ...]], --variables [GridMet_Variables [GridMet_Variables ...]]
-                            over-ride default vars
-                        
-### Do an ETL:
+                            override default vars
+       
+Do an ETL
+~~~~~~~~~
 
 .. code-block:: bash
 
     gridmetetl -t date -p 2018-09-01 2018-09-02 -i ../../GitRepos/onhm-fetcher-parser/Data -o ../../GitRepos/onhm-fetcher-parser/Output -w ../../onhm-fetcher-parser/Data/weights.csv
 
-
-### Additional examples:
+Additional examples
+```````````````````
 https://github.com/nhm-usgs/gridmetetl/blob/master/Examples/Example_code_usage.ipynb
 
 Features

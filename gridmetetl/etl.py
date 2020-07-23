@@ -436,12 +436,7 @@ class FpoNHM:
         ncfile.featureType = 'timeSeries'
         ncfile.history = ''
 
-        sp_dim = len(self.gdf1.index)
         # Create dimensions
-
-        hruid_dim = ncfile.createDimension('hruid', size=sp_dim)  # hru_id
-        time_dim = ncfile.createDimension('time', size=None)  # unlimited axis (can be appended to).
-
         for dim in ncfile.dimensions.items():
             print(dim, flush=True)
 
