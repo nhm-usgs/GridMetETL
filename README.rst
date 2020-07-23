@@ -2,7 +2,6 @@
 gridmetETL
 ==========
 
-
 .. image:: https://img.shields.io/pypi/v/gridmetetl.svg
         :target: https://pypi.python.org/pypi/gridmetetl
 
@@ -13,11 +12,7 @@ gridmetETL
         :target: https://gridmetetl.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-
-
-
 Extract data from gridMET; translate to HRU; load to netCDF
-
 
 * Free software: MIT license
 * Documentation: https://gridmetetl.readthedocs.io.
@@ -39,8 +34,10 @@ Install
         * ``pip install -e .``
     * Use code
         * ``pip install .``
+
 Use
--------
+---
+
 From your Conda environment created above:
 
 .. code-block:: bash
@@ -76,14 +73,15 @@ From your Conda environment created above:
       -v [GridMet_Variables [GridMet_Variables ...]], --variables [GridMet_Variables [GridMet_Variables ...]]
                             override default vars
                         
-### Do an ETL:
+Do an ETL
+~~~~~~~~~
 
 .. code-block:: bash
 
     gridmetetl -t date -p 2018-09-01 2018-09-02 -i ../../GitRepos/onhm-fetcher-parser/Data -o ../../GitRepos/onhm-fetcher-parser/Output -w ../../onhm-fetcher-parser/Data/weights.csv
 
-
-### Additional examples:
+Additional examples
+```````````````````
 https://github.com/nhm-usgs/gridmetetl/blob/master/Examples/Example_code_usage.ipynb
 
 Features
