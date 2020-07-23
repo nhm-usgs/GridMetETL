@@ -24,24 +24,24 @@ Extract data from gridMET; translate to HRU; load to netCDF
 
 Install
 -------
-1. Create conda env as follows
-    * conda create -n gmetl python=3.7
-    * conda activate gmetl
-    * conda install -c conda-forge numpy matplotlib pandas geopandas xarray netcdf4 requests dask
-    * conda install -c conda-forge jupyterlab
+1. Create Conda env as follows
+    * ``conda create -n gmetl python=3.7``
+    * ``conda activate gmetl``
+    * ``conda install -c conda-forge numpy matplotlib pandas geopandas xarray netcdf4 requests dask``
+    * ``conda install -c conda-forge jupyterlab``
    OPTIONAL:
-    * conda install -c conda-forge git
-    * conda install -c conda-forge pip
+    * ``conda install -c conda-forge git``
+    * ``conda install -c conda-forge pip``
 
 2. Clone repository
-    * cd gridmetetl
+    * ``cd gridmetetl``
     * Develop code:
-        * pip install -e .
+        * ``pip install -e .``
     * Use code
-        * pip install .
+        * ``pip install .``
 Use
 -------
-From your conda environment created above:
+From your Conda environment created above:
 
 .. code-block:: bash
 
@@ -74,7 +74,7 @@ From your conda environment created above:
       -w weight_file, --weightsfile weight_file
                             path/weight.csv - path/name of weight file
       -v [GridMet_Variables [GridMet_Variables ...]], --variables [GridMet_Variables [GridMet_Variables ...]]
-                            over-ride default vars
+                            override default vars
                         
 ### Do an ETL:
 
