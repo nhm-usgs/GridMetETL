@@ -40,7 +40,7 @@ Use
 
 From your Conda environment created above:
 
-.. code-block:: bash
+::
 
     (gmetl) B:\gitbmi\gridmetetl>gridmetetl -h
 
@@ -72,7 +72,7 @@ From your Conda environment created above:
                             path/weight.csv - path/name of weight file
       -v [GridMet_Variables [GridMet_Variables ...]], --variables [GridMet_Variables [GridMet_Variables ...]]
                             override default vars
-                        
+       
 Do an ETL
 ~~~~~~~~~
 
