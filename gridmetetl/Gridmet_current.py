@@ -31,14 +31,18 @@ urlsuffix = 'dataset.xml'
 #print(datetime.tzinfo, datetime.utcoffset(datetime.now()))
 nowutc = datetime.utcnow()
 now = nowutc - timedelta(hours=7)
-yesterday = now - timedelta(days=1)
+yesterday = (now - timedelta(days=2)).date()
 print('nowutc: ', nowutc, ' now: ', now, ' yesterday: ', yesterday)
 
 for data in data_packets:
     masterURL = serverURL + '/' + data + '/' + urlsuffix
     datadef = getxml(masterURL)['gridDataset']['TimeSpan']['end']
     gm_date = datetime.strptime(datadef[:10],'%Y-%m-%d').date()
+    print(type(gm_date), type(yesterday))
+    print('gridmet date: ', gm_date, ' yesterday: ', yesterday)
     if gm_date != yesterday:
         print(f'Gridmet data {data} is not available:\n' +
               'process exiting')
         sys.exit(1)
+    else:
+        print(f'Gridmet data {data} is available')
