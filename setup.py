@@ -43,7 +43,7 @@ setup(
     include_package_data=True,
     keywords='gridmetetl',
     name='gridmetetl',
-    packages=find_packages(include=['gridmetetl', 'gridmetetl.*']),
+    packages=find_packages(include=['gridmetetl', 'gridmetetl.*', 'helper.*']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
