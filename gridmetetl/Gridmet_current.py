@@ -31,7 +31,7 @@ urlsuffix = 'dataset.xml'
 #print(datetime.tzinfo, datetime.utcoffset(datetime.now()))
 nowutc = datetime.utcnow()
 now = nowutc - timedelta(hours=7)
-yesterday = (now - timedelta(days=2)).date()
+yesterday = (now - timedelta(days=1)).date()
 print('nowutc: ', nowutc, ' now: ', now, ' yesterday: ', yesterday)
 
 for data in data_packets:
