@@ -5,7 +5,7 @@ from netCDF4 import default_fillvals, Dataset
 from numpy import arange, dtype, float32, zeros, asarray
 import sys
 import xarray as xr
-from helper import get_gm_url, np_get_wval, getaverage
+from .helper import get_gm_url, np_get_wval, getaverage
 import requests
 from requests.exceptions import HTTPError
 from datetime import datetime
@@ -217,43 +217,50 @@ class FpoNHM:
                     self.str_start, url, params = get_gm_url(self.type, 'tmax', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-                    self.dstmax = xr.open_dataset(ncfile[-1])
+                    self.dstmax = xr.open_dataset(ncfile[-1], mask_and_scale=True)
+                    self.dstmax = xr.where(self.dstmax < 1000.0, self.dstmax, np.nan)
                 elif var == 'tmin':
                     # Minimum Temperature
                     self.str_start, url, params = get_gm_url(self.type, 'tmin', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-                    self.dstmin = xr.open_dataset(ncfile[-1])
+                    self.dstmin = xr.open_dataset(ncfile[-1], mask_and_scale=True)
+                    self.dstmin = xr.where(self.dstmin < 1000.0, self.dstmin, np.nan)
                 elif var == 'ppt':
                     # Precipitation
                     self.str_start, url, params = get_gm_url(self.type, 'ppt', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-                    self.dsppt = xr.open_dataset(ncfile[-1])
+                    self.dsppt = xr.open_dataset(ncfile[-1], mask_and_scale=True)
+                    self.dsppt = xr.where(self.dsppt < 1000.0, self.dsppt, np.nan)
                 elif var == 'rhmax':
                     # Maximum Relative Humidity
                     self.str_start, url, params = get_gm_url(self.type, 'rhmax', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-                    self.dsrhmax = xr.open_dataset(ncfile[-1])
+                    self.dsrhmax = xr.open_dataset(ncfile[-1], mask_and_scale=True)
+                    self.dsrhmax = xr.where(self.dsrhmax < 1000.0, self.dsrhmax, np.nan)
                 elif var == 'rhmin':
                     # Minimum Relative Humidity
                     self.str_start, url, params = get_gm_url(self.type, 'rhmin', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-                    self.dsrhmin = xr.open_dataset(ncfile[-1])
+                    self.dsrhmin = xr.open_dataset(ncfile[-1], mask_and_scale=True)
+                    self.dsrhmin = xr.where(self.dsrhmin < 1000.0, self.dsrhmin, np.nan)
                 elif var == 'ws':
                     # Mean daily Wind Speed
                     self.str_start, url, params = get_gm_url(self.type, 'ws', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-                    self.dsws = xr.open_dataset(ncfile[-1])
+                    self.dsws = xr.open_dataset(ncfile[-1], mask_and_scale=True)
+                    self.dsws = xr.where(self.dsws < 1000.0, self.dsws, np.nan)
                 elif var == 'srad':
                     # Surface downwelling shortwave flux in air
                     self.str_start, url, params = get_gm_url(self.type, 'srad', self.numdays,
                                                              self.start_date, self.end_date)
                     self.write_extract_file(var, ncfile, url, params)
-                    self.dssrad = xr.open_dataset(ncfile[-1])
+                    self.dssrad = xr.open_dataset(ncfile[-1], mask_and_scale=True)
+                    self.dssrad = xr.where(self.dssrad < 1000.0, self.dssrad, np.nan)
             except HTTPError as http_err:
                 print(f'HTTP error occured: {http_err}', flush=True)
                 if self.numdays == 1:
