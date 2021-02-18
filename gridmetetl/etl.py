@@ -136,7 +136,7 @@ class FpoNHM:
     def write_extract_file(self, ivar, incfile, url, params):
         file = requests.get(url, params=params)
         file.raise_for_status()
-        tfile = self.iptpath / (self.fileprefix + ivar + (datetime.now().strftime('%Y_%m_%d')) + '.nc')
+        tfile = self.iptpath / (self.fileprefix + ivar + (self.end_date.strftime('%Y_%m_%d')) + '.nc')
         incfile.append(tfile)
         with open(tfile, 'wb') as fh:
             fh.write(file.content)
@@ -185,6 +185,7 @@ class FpoNHM:
         self.numdays = days
         self.start_date = start_date
         self.end_date = end_date
+        print(self.end_date, type(self.end_date))
         self.fileprefix = fileprefix
 
         print(Path.cwd())
@@ -429,7 +430,7 @@ class FpoNHM:
         print(Path.cwd(), flush=True)
 
         ncfile = Dataset(
-            self.optpath / (self.fileprefix + 'climate_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc'),
+            self.optpath / (self.fileprefix + 'climate_' + str(self.end_date.strftime('%Y_%m_%d')) + '.nc'),
             mode='w', format='NETCDF4_CLASSIC')
 
         def getxy(pt):

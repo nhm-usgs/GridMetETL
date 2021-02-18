@@ -1,5 +1,5 @@
 """Console script for gridmetetl."""
-from etl import FpoNHM
+from .etl import FpoNHM
 import argparse
 import sys
 import datetime
@@ -109,10 +109,10 @@ def get_file_prefix(args):
     else:
         return ''
 
-def main(parser, args):
+def main():
     """Console script for gridmetetl."""
-    my_parser = parser
-    my_args = args
+    my_parser = parser()
+    my_args = args(my_parser)
     numdays = None
     startdate = None
     enddate = None
@@ -128,7 +128,7 @@ def main(parser, args):
     idir = my_args.inpath
     odir = my_args.outpath
     wght_file = my_args.weightsfile
-    file_prefix = get_file_prefix(args)
+    file_prefix = get_file_prefix(my_args)
     gm_vars = my_args.variables
     partial = my_args.partial
     print('starting Script', flush=True)
@@ -170,7 +170,4 @@ def main(parser, args):
 
 
 if __name__ == "__main__":
-    parser = parser()
-    args = args(parser)
-
-    main(parser, args)
+    sys.exit(main())
