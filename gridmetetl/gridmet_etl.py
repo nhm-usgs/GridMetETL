@@ -1,7 +1,6 @@
 """Console script for gridmetetl."""
 from etl import FpoNHM
 import argparse
-import sys
 import datetime
 from pathlib import Path
 
@@ -154,7 +153,6 @@ def main():
                 fp.setnumdays(numdays - 1)
                 print('initalized\n', flush=True)
                 print('running', flush=True)
-                status = fp.run_weights()
                 print('finished running', flush=True)
                 fp.finalize()
                 print('finalized', flush=True)
